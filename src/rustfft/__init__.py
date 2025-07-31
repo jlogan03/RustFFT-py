@@ -66,7 +66,8 @@ class FftPlanner:
             buffer: 1D array of complex numbers matching the initialized dtype
         """
         # Reallocate or convert type if necessary
-        buffer_maybe_new = ascontiguousarray(buffer.astype(self._dtype))
+        buffer_maybe_new = buffer if buffer.dtype == self._dtype else buffer.astype(self._dtype)
+        buffer_maybe_new = ascontiguousarray(buffer_maybe_new)  # Only reallocates if necessary
         if id(buffer_maybe_new) != id(buffer):
             getLogger().warning(
                 "Reallocating input buffer for FFT, either due to discontiguous data or incorrect data type."
