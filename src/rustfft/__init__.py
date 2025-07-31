@@ -16,22 +16,26 @@ from rustfft._core import (
 
 
 class FftPlanner:
+    """Prepared FFT plan for a given size, direction, and data type."""
+
     _inner: _FftPlannerF32 | _FftPlannerF64
     _dtype: DTypeLike
 
     def __init__(
         self,
         len: int,
-        direction: Literal["forward", "inverse"],
-        dtype: Literal["c32", "c64"] = "c64",
+        direction: Literal["forward", "inverse"] = "forward",
+        dtype: Literal["c64", "c128"] = "c128",
     ):
         """Prepare an FFT plan for a given size, direction, and data type.
 
         Args:
             len: Number of elements in the input
-            direction: Forward FFT or inverse
-            dtype: Whether to use 32-bit floats or 64-bit floats for each part of a complex number.
-                   Defaults to "c64".
+            direction: Forward FFT or inverse.
+                       Defaults to "forward".
+            dtype: Whether to use 32-bit floats (c64) or 64-bit floats (c128)
+                   for each part of a complex number.
+                   Defaults to "c128".
 
         Raises:
             ValueError: If inputs do not match available options
@@ -45,14 +49,14 @@ class FftPlanner:
         else:
             raise ValueError(f"Direction must be either `forward` or `inverse`; received `{direction}`")
 
-        if dtype.lower() == "c32":
+        if dtype.lower() == "c64":
             self._inner = _FftPlannerF32(len, d)
             self._dtype = complex64  # 64 bits total
-        elif dtype.lower() == "c64":
+        elif dtype.lower() == "c128":
             self._inner = _FftPlannerF64(len, d)
             self._dtype = complex128  # 128 bits total
         else:
-            raise ValueError(f"dtype must be either `c32` or `c64`; received `{dtype}`")
+            raise ValueError(f"dtype must be either `c64` or `c128`; received `{dtype}`")
 
     def process(self, buffer: NDArray[complex64] | NDArray[complex128]) -> NDArray:
         """Run the FFT, converting the values in the buffer in-place if possible,
@@ -72,3 +76,6 @@ class FftPlanner:
         self._inner.process(buffer_maybe_new)
 
         return buffer_maybe_new
+
+    def __call__(self, buffer: NDArray[complex64] | NDArray[complex128]) -> NDArray:
+        return self.process(buffer)
