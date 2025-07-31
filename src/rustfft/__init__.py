@@ -25,7 +25,7 @@ class FftPlanner:
         self,
         len: int,
         direction: Literal["forward", "inverse"] = "forward",
-        dtype: Literal["c64", "c128"] = "c128",
+        dtype: DTypeLike = complex128,
     ):
         """Prepare an FFT plan for a given size, direction, and data type.
 
@@ -33,9 +33,9 @@ class FftPlanner:
             len: Number of elements in the input
             direction: Forward FFT or inverse.
                        Defaults to "forward".
-            dtype: Whether to use 32-bit floats (c64) or 64-bit floats (c128)
+            dtype: Whether to use 32-bit floats (complex64) or 64-bit floats (complex128)
                    for each part of a complex number.
-                   Defaults to "c128".
+                   Defaults to "complex128".
 
         Raises:
             ValueError: If inputs do not match available options
@@ -49,14 +49,14 @@ class FftPlanner:
         else:
             raise ValueError(f"Direction must be either `forward` or `inverse`; received `{direction}`")
 
-        if dtype.lower() == "c64":
+        if dtype is complex64:
             self._inner = _FftPlannerF32(len, d)
             self._dtype = complex64  # 64 bits total
-        elif dtype.lower() == "c128":
+        elif dtype is complex128:
             self._inner = _FftPlannerF64(len, d)
             self._dtype = complex128  # 128 bits total
         else:
-            raise ValueError(f"dtype must be either `c64` or `c128`; received `{dtype}`")
+            raise ValueError(f"dtype must be either `complex64` or `complex128`; received `{dtype}`")
 
     def process(self, buffer: NDArray[complex64] | NDArray[complex128]) -> NDArray:
         """Run the FFT, converting the values in the buffer in-place if possible,
