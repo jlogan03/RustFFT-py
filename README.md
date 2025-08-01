@@ -5,26 +5,28 @@ without platform restrictions and with permissive licensing.
 import numpy as np
 from rustfft import FftPlanner
 
-for direction in ["forward", "inverse"]:
-    # Supports complex numbers with 32 and 64-bit floats
-    for dtype in [np.complex64, np.complex128]:
-        # Complex-valued input
-        n = 1024
-        buffer = np.ascontiguousarray(np.random.uniform(0.0, 1.0, n).astype(dtype))
-        original = buffer.copy()
+rng = np.random.default_rng(seed=89324598)
 
-        # Pre-planned FFT caches the initial setup
-        fft = FftPlanner(n, direction, dtype)
+# Supports complex numbers with 32 and 64-bit floats
+n = 1024
+for dtype in [np.complex64, np.complex128]:
+    # Complex-valued input
+    buffer = np.ascontiguousarray(rng.uniform(0.0, 1.0, n).astype(dtype))  # Real input
+    original = buffer.copy()
 
-        # Run FFT, reusing input for output storage to avoid allocation if possible
-        out = fft.process(buffer)
-        if direction == "forward":
-            assert np.allclose(out, np.fft.fft(original))
-        else:
-            assert np.allclose(out, np.fft.ifft(original))
+    # Pre-planned FFT caches the initial setup
+    fft = FftPlanner(n, dtype=dtype)
 
-        # Run FFT repeatedly without re-initializing
-        out = fft.process(out)
+    # Run FFT, reusing input for output storage to avoid allocation if possible
+    out = fft.process(buffer)
+    assert np.allclose(out, np.fft.fft(original)), "Forward results should match numpy"
+
+    # Inverse supported
+    ifft = FftPlanner(n, "inverse", dtype)
+    assert np.allclose(ifft(out), original), "`ifft(fft(x))` should restore `x`"
+
+    # Run FFT repeatedly without re-initializing
+    out = fft.process(out)
 ```
 
 # License
