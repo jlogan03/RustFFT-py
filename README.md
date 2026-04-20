@@ -21,9 +21,15 @@ for dtype in [np.complex64, np.complex128]:
     out = fft.process(buffer)
     assert np.allclose(out, np.fft.fft(original)), "Forward results should match numpy"
 
-    # Inverse supported
+    # RustFFT does not normalize inverse transforms, so divide by n to recover the input.
     ifft = FftPlanner(n, "inverse", dtype)
-    assert np.allclose(ifft(out), original), "`ifft(fft(x))` should restore `x`"
+    restored = ifft(out) / n
+    assert np.allclose(
+        restored,
+        original,
+        rtol=1e-5,
+        atol=1e-6,
+    ), "`ifft(fft(x)) / n` should restore `x`"
 
     # Run FFT repeatedly without re-initializing
     out = fft.process(out)

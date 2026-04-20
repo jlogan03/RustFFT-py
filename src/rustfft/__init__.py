@@ -20,6 +20,7 @@ class FftPlanner:
 
     _inner: _FftPlannerF32 | _FftPlannerF64
     _dtype: DTypeLike
+    _len: int
 
     def __init__(
         self,
@@ -58,12 +59,16 @@ class FftPlanner:
         else:
             raise ValueError(f"dtype must be either `complex64` or `complex128`; received `{dtype}`")
 
+        self._len = len
+
     def process(self, buffer: NDArray[complex64] | NDArray[complex128]) -> NDArray:
         """Run the FFT, converting the values in the buffer in-place if possible,
         and allocating a new array if densification or type conversion is required.
 
         Args:
-            buffer: 1D array of complex numbers matching the initialized dtype
+            buffer: 1D array of complex numbers matching the initialized dtype.
+                    For non-zero FFT sizes, the array length must be a positive
+                    multiple of the initialized length.
         """
         # Reallocate or convert type if necessary
         buffer_maybe_new = buffer if buffer.dtype == self._dtype else buffer.astype(self._dtype)
@@ -71,6 +76,15 @@ class FftPlanner:
         if id(buffer_maybe_new) != id(buffer):
             getLogger().warning(
                 "Reallocating input buffer for FFT, either due to discontiguous data or incorrect data type."
+            )
+
+        if buffer_maybe_new.ndim != 1:
+            raise ValueError(f"buffer must be one-dimensional; received shape {buffer_maybe_new.shape}")
+
+        if self._len and buffer_maybe_new.size % self._len != 0:
+            raise ValueError(
+                f"buffer length must be a multiple of the FFT length ({self._len}); "
+                f"received {buffer_maybe_new.size}"
             )
 
         # Run the actual FFT
